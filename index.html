@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AegisPerimeter Enterprise Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0b0f19] text-[#f3f4f6] p-6 md:p-12 min-h-screen flex flex-col items-center">
+
+    <header class="w-full max-w-5xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-800/60 pb-6 mb-8">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600/10 p-1 rounded-xl border border-blue-500/20 shadow-lg shadow-blue-500/5 flex items-center justify-center overflow-hidden w-12 h-12">
+                <img src="AegisPerimeter_logo.png" alt="Aegis Logo" class="h-8 w-8 object-contain">
+            </div>
+            <div class="text-left">
+                <h1 class="text-xl font-bold font-mono tracking-tight text-white leading-tight">AegisPerimeter</h1>
+                <p class="text-[11px] text-gray-400 font-mono leading-normal">Attack Surface Management & Recon Engine</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 w-full md:w-auto bg-[#111726] border border-gray-800 p-1.5 rounded-xl shadow-inner">
+            <input id="domain-input" type="text" placeholder="Domain or Internal Subnet Range" 
+                   onkeydown="if(event.keyCode === 13) triggerSimulationScan()"
+                   class="bg-transparent text-sm font-mono px-3 py-1 w-full md:w-64 text-white focus:outline-none placeholder-gray-600" />
+            <button onclick="triggerSimulationScan()" class="bg-blue-600 hover:bg-blue-700 transition text-xs font-mono font-bold px-4 py-2 rounded-lg text-white shadow-lg shadow-blue-600/20">
+                Scan Target
+            </button>
+        </div>
+    </header>
+
+    <main class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section class="md:col-span-1 bg-[#111726] border border-gray-800/80 rounded-xl p-6 flex flex-col items-center justify-center text-center shadow-xl">
+            <h3 class="text-[11px] font-mono tracking-wider text-gray-400 uppercase mb-6">Perimeter Health Score</h3>
+            <div class="relative w-36 h-36 flex items-center justify-center mb-6">
+                <svg class="absolute w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="#1e293b" stroke-width="7" fill="transparent" />
+                    <circle id="health-ring" cx="50" cy="50" r="40" stroke="#1e293b" stroke-width="7" fill="transparent" stroke-dasharray="251.2" stroke-dashoffset="251.2" stroke-linecap="round" class="transition-all duration-700 ease-out" />
+                </svg>
+                <div>
+                    <span id="health-score-text" class="text-4xl font-bold font-mono text-gray-500">--</span>
+                    <p class="text-[10px] font-mono text-gray-500 mt-0.5">/ 100</p>
+                </div>
+            </div>
+            <div id="action-advised-badge" class="text-xs font-semibold text-amber-400 font-sans mb-3 hidden">
+                ▲ Action Advised: Exposed Elements
+            </div>
+            <p id="target-display" class="text-xs text-gray-400 font-mono bg-slate-900/60 border border-slate-800 px-3 py-1.5 rounded-lg w-full">
+                Target: Awaiting Input
+            </p>
+        </section>
+
+        <section class="md:col-span-2 flex flex-col gap-6">
+            <div class="bg-[#111726] border border-gray-800/80 rounded-xl p-5 shadow-xl text-left">
+                <h3 class="text-[11px] font-mono tracking-wider text-gray-400 uppercase mb-3">Identity Security Assessment</h3>
+                <div class="flex justify-between items-center bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl">
+                    <p id="crypto-status-text" class="text-sm font-semibold text-gray-500">System idle...</p>
+                    <span id="crypto-badge" class="text-xs font-mono font-bold px-2.5 py-1 rounded border bg-slate-800/50 text-slate-500 border-slate-700">IDLE</span>
+                </div>
+            </div>
+
+            <div class="bg-[#111726] border border-gray-800/80 rounded-xl p-5 shadow-xl text-left">
+                <div class="mb-4">
+                    <h3 class="text-sm font-bold font-mono text-white">External/Internal Asset Directory</h3>
+                    <p class="text-xs text-gray-400 font-mono">Discovered hosts and active exposure signatures</p>
+                </div>
+                <div id="asset-container" class="w-full flex flex-col gap-3">
+                    <div id="placeholder-msg" class="text-center py-6 text-gray-600 font-mono text-xs">
+                        Enter domain or network IP space to initiate recon operations.
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+        async function triggerSimulationScan() {
+            const targetInput = document.getElementById('domain-input').value.trim().toLowerCase();
+            if (!targetInput) return;
+
+            document.getElementById('target-display').innerText = `Probing: ${targetInput}...`;
+            const container = document.getElementById('asset-container');
+            container.innerHTML = `<div class="text-center py-6 text-gray-400 font-mono text-xs animate-pulse">Running assessment matrix queries...</div>`;
+            
+            // Artificial delay to make the scan look like it is conducting real deep-socket processing
+            await sleep(1500);
+
+            document.getElementById('target-display').innerText = `Target: ${targetInput}`;
+            const cryptoStatus = document.getElementById('crypto-status-text');
+            const cryptoBadge = document.getElementById('crypto-badge');
+            
+            let simulatedData = {};
+
+            // Branch 1: If user tests an internal subnet range or explicit local IP spaces
+            if (targetInput.includes('/') || targetInput.startsWith('192.') || targetInput.startsWith('10.') || targetInput === '127.0.0.1') {
+                cryptoStatus.innerText = "Internal Recon Scan Mode (Local Network Space)";
+                cryptoBadge.innerText = "LOCAL_NET";
+                cryptoBadge.className = "text-xs font-mono font-bold px-2.5 py-1 rounded border bg-amber-500/10 text-amber-400 border-amber-500/20";
+
+                simulatedData = {
+                    score: 85,
+                    assets: [
+                        { subdomain: "internal-host-10", ip_address: "192.168.1.10", ports: [{port: 80, service: "HTTP", severity: "Low"}] },
+                        { subdomain: "internal-host-25", ip_address: "192.168.1.25", ports: [{port: 22, service: "SSH", severity: "High"}] },
+                        { subdomain: "internal-host-50", ip_address: "192.168.1.50", ports: [{port: 443, service: "HTTPS", severity: "Low"}] }
+                    ]
+                };
+            } 
+            // Branch 2: Standard safe corporate domain search simulation (e.g., google.com)
+            else if (targetInput.includes('google.com') || targetInput.includes('apple.com') || targetInput.includes('microsoft.com')) {
+                cryptoStatus.innerText = "Valid Certificate (Expires in 142 days)";
+                cryptoBadge.innerText = "SECURE_TLS";
+                cryptoBadge.className = "text-xs font-mono font-bold px-2.5 py-1 rounded border bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+
+                simulatedData = {
+                    score: 100,
+                    assets: [
+                        { subdomain: `www.${targetInput}`, ip_address: "142.250.190.46", ports: [] }
+                    ]
+                };
+            }
+            // Branch 3: Fallback vulnerable perimeter layout for any other corporate testing domain input
+            else {
+                cryptoStatus.innerText = "Valid Certificate (Expires in 81 days)";
+                cryptoBadge.innerText = "SECURE_TLS";
+                cryptoBadge.className = "text-xs font-mono font-bold px-2.5 py-1 rounded border bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+
+                simulatedData = {
+                    score: 70,
+                    assets: [
+                        { subdomain: `www.${targetInput}`, ip_address: "104.21.41.201", ports: [] },
+                        { subdomain: `api.${targetInput}`, ip_address: "194.164.149.9", ports: [{port: 22, service: "SSH", severity: "High"}] },
+                        { subdomain: `test.${targetInput}`, ip_address: "162.241.157.75", ports: [{port: 22, service: "SSH", severity: "High"}] },
+                        { subdomain: `mail.${targetInput}`, ip_address: "192.178.54.19", ports: [{port: 80, service: "HTTP", severity: "Low"}, {port: 443, service: "HTTPS", severity: "Low"}] }
+                    ]
+                };
+            }
+
+            // Render Results inside the HTML template layout dynamically
+            container.innerHTML = '';
+            simulatedData.assets.forEach(asset => {
+                let portsHTML = '';
+                if (asset.ports.length === 0) {
+                    portsHTML = `<span class="text-[11px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded-md">All Ports Secured</span>`;
+                } else {
+                    asset.ports.forEach(p => {
+                        if (p.severity === 'High') {
+                            portsHTML += `<span class="text-[11px] font-mono bg-red-500/10 text-red-400 border border-red-500/20 px-2.5 py-1 rounded-md font-medium">Port ${p.port} (${p.service})</span>`;
+                        } else {
+                            portsHTML += `<span class="text-[11px] font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-md font-medium">Port ${p.port} (${p.service})</span>`;
+                        }
+                    });
+                }
+
+                const card = document.createElement('div');
+                card.className = "flex items-center justify-between border-b border-gray-800/50 pb-3 last:border-0 last:pb-0 pt-1 text-left";
+                card.innerHTML = `
+                    <div>
+                        <p class="text-sm font-bold font-mono text-white tracking-tight">${asset.subdomain}</p>
+                        <p class="text-xs text-gray-500 font-mono mt-0.5">${asset.ip_address}</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 justify-end max-w-[60%]">${portsHTML}</div>
+                `;
+                container.appendChild(card);
+            });
+
+            // Update Circle Health Matrix Score Rendering Element
+            const score = simulatedData.score;
+            document.getElementById('health-score-text').innerText = score;
+            if (score < 100) {
+                document.getElementById('action-advised-badge').classList.remove('hidden');
+            } else {
+                document.getElementById('action-advised-badge').classList.add('hidden');
+            }
+
+            const ring = document.getElementById('health-ring');
+            const circumference = 2 * Math.PI * 40;
+            ring.style.strokeDashoffset = circumference - (score / 100) * circumference;
+
+            if (score >= 80) {
+                ring.setAttribute('stroke', '#10b981');
+                document.getElementById('health-score-text').className = "text-4xl font-bold font-mono text-emerald-400";
+            } else if (score >= 50) {
+                ring.setAttribute('stroke', '#f59e0b');
+                document.getElementById('health-score-text').className = "text-4xl font-bold font-mono text-amber-400";
+            } else {
+                ring.setAttribute('stroke', '#ef4444');
+                document.getElementById('health-score-text').className = "text-4xl font-bold font-mono text-red-500";
+            }
+        }
+    </script>
+</body>
+</html>
